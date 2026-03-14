@@ -1,88 +1,199 @@
-from fastapi import FastAPI, APIRouter
-from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
-import logging
-from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import List
+import logging
+import os
 
+from dotenv import load_dotenv
+from fastapi import APIRouter, FastAPI, Query
+from motor.motor_asyncio import AsyncIOMotorClient
+from starlette.middleware.cors import CORSMiddleware
+
+from models import (
+    AIChatRequest,
+    AIChatResponse,
+    ComparisonResponse,
+    CompetitorPairRequest,
+    DailyBriefingResponse,
+)
+from services.intelligence_orchestrator import IntelligenceOrchestrator
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+load_dotenv(ROOT_DIR / ".env")
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
+mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db = client[os.environ["DB_NAME"]]
 
-# Create the main app without a prefix
-app = FastAPI()
-
-# Create a router with the /api prefix
+app = FastAPI(title="ShadowIntel API", version="1.0.0")
 api_router = APIRouter(prefix="/api")
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+orchestrator = IntelligenceOrchestrator()
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
 
-# Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {
+        "message": "ShadowIntel API is running",
+        "product": "AI-native competitive intelligence for product teams",
+    }
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
+@api_router.get("/health")
+async def health_check():
+    return {
+        "status": "ok",
+        "service": "shadowintel-backend",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
 
-# Include the router in the main app
+
+@api_router.post("/intelligence/briefing", response_model=DailyBriefingResponse)
+async def generate_daily_briefing(payload: CompetitorPairRequest):
+    report = await orchestrator.build_daily_briefing(
+        payload.competitor_a,
+        payload.competitor_b,
+    )
+    stored_report = report.copy()
+    await db.intelligence_reports.insert_one(stored_report)
+    return report
+
+
+@api_router.get("/intelligence/briefings", response_model=List[DailyBriefingResponse])
+async def get_briefing_history(limit: int = Query(default=10, ge=1, le=30)):
+    history = await (
+        db.intelligence_reports.find({}, {"_id": 0})
+        .sort("generated_at", -1)
+        .limit(limit)
+        .to_list(limit)
+    )
+    return history
+
+
+@api_router.get("/intelligence/latest", response_model=DailyBriefingResponse)
+async def get_or_generate_latest(
+    competitor_a: str = Query(...),
+    competitor_b: str = Query(...),
+):
+    existing = await db.intelligence_reports.find_one(
+        {
+            "competitor_a.company_name": competitor_a.strip(),
+            "competitor_b.company_name": competitor_b.strip(),
+        },
+        {"_id": 0},
+        sort=[("generated_at", -1)],
+    )
+    if existing:
+        return existing
+
+    report = await orchestrator.build_daily_briefing(competitor_a, competitor_b)
+    stored_report = report.copy()
+    await db.intelligence_reports.insert_one(stored_report)
+    return report
+
+
+@api_router.get("/intelligence/comparison", response_model=ComparisonResponse)
+async def get_comparison(
+    competitor_a: str = Query(...),
+    competitor_b: str = Query(...),
+):
+    latest = await db.intelligence_reports.find_one(
+        {
+            "competitor_a.company_name": competitor_a.strip(),
+            "competitor_b.company_name": competitor_b.strip(),
+        },
+        {"_id": 0},
+        sort=[("generated_at", -1)],
+    )
+
+    if not latest:
+        latest = await orchestrator.build_daily_briefing(competitor_a, competitor_b)
+        stored_report = latest.copy()
+        await db.intelligence_reports.insert_one(stored_report)
+
+    return {
+        "generated_at": latest["generated_at"],
+        "competitor_a": latest["competitor_a"]["company_name"],
+        "competitor_b": latest["competitor_b"]["company_name"],
+        "metrics": latest["comparison"],
+        "source_status": latest["source_status"],
+    }
+
+
+@api_router.post("/intelligence/chat", response_model=AIChatResponse)
+async def intelligence_chat(payload: AIChatRequest):
+    context_report = await db.intelligence_reports.find_one(
+        {
+            "competitor_a.company_name": payload.competitor_a.strip(),
+            "competitor_b.company_name": payload.competitor_b.strip(),
+        },
+        {"_id": 0},
+        sort=[("generated_at", -1)],
+    )
+    if not context_report:
+        context_report = await orchestrator.build_daily_briefing(
+            payload.competitor_a,
+            payload.competitor_b,
+        )
+        stored_report = context_report.copy()
+        await db.intelligence_reports.insert_one(stored_report)
+
+    answer = await orchestrator.answer_question(
+        question=payload.question,
+        context_report=context_report,
+        history=[msg.model_dump() for msg in payload.history],
+    )
+
+    response = {
+        "answer": answer,
+        "competitor_a": payload.competitor_a,
+        "competitor_b": payload.competitor_b,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    stored_message = {
+        "question": payload.question,
+        **response,
+    }
+    await db.chat_messages.insert_one(stored_message)
+    return response
+
+
+@api_router.get("/intelligence/chat/history")
+async def get_chat_history(limit: int = Query(default=20, ge=1, le=100)):
+    history = await (
+        db.chat_messages.find({}, {"_id": 0})
+        .sort("timestamp", -1)
+        .limit(limit)
+        .to_list(limit)
+    )
+    return history
+
+
+@api_router.get("/intelligence/source-status")
+async def source_status():
+    return {
+        "crustdata_configured": orchestrator.crustdata_service.is_configured,
+        "openai_configured": orchestrator.ai_service.is_configured,
+        "note": "Set CRUSTDATA_API_KEY in backend/.env for live competitive intelligence.",
+    }
+
+
 app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=os.environ["CORS_ORIGINS"].split(","),
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

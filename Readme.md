@@ -2,12 +2,14 @@
 A living competitive intelligence layer that continuously monitors competitors, surfaces signals, and alerts product managers to threats and opportunities in real time.
 ________________________________________
 📌 Overview
+
 Modern product management operates in a hyper-competitive and fast-moving landscape. Competitors launch features overnight, hire aggressively into strategic domains, announce partnerships, and influence customer sentiment across social media and press channels.
 However, most product and strategy teams still rely on manual monitoring—checking competitor blogs, LinkedIn posts, hiring pages, and review platforms sporadically. This fragmented approach leads to missed signals, delayed responses, and incomplete strategic awareness.
 The AI-Native Competitive Intelligence Platform addresses this gap by acting as a continuous, ambient intelligence layer for product teams. Inspired by the “Cursor for PMs” theme from the Y Combinator Spring 2026 Request for Startups, the platform continuously gathers competitive signals and transforms them into structured, actionable insights delivered directly into a PM's workflow.
 Instead of manually searching for competitor activity, PMs receive a daily AI-generated competitive briefing, real-time alerts, and on-demand analysis about how competitors are evolving and how customers are engaging with them.
 ________________________________________
 🎯 The Problem
+
 Product managers must track multiple sources to understand competitor strategy:
 •	Blog posts and feature announcements
 •	Hiring activity revealing roadmap priorities
@@ -27,6 +29,7 @@ Important signals (new hiring initiatives or shifting sentiment) are often detec
 Raw information rarely translates into actionable competitive strategy insights.
 ________________________________________
 🚀 Solution
+
 The platform introduces a real-time competitive intelligence agent that continuously monitors the digital footprint of competitors.
 It automatically aggregates signals such as:
 •	Social engagement patterns
@@ -42,7 +45,9 @@ Think of the system as:
 Instead of financial markets, it tracks competitor strategy signals.
 ________________________________________
 🧠 Key Features
+
 1️⃣ Social Reactor Intelligence
+
 Analyzes who is engaging with competitor posts to detect audience overlap and potential relationship risk.
 Capabilities include:
 •	Identify shared audiences between your company and competitors
@@ -51,6 +56,7 @@ Capabilities include:
 This enables early detection of churn risk or shifting market interest.
 ________________________________________
 2️⃣ Hiring Signal Monitoring
+
 Competitor hiring patterns often reveal future product roadmap priorities.
 By analyzing active job postings, the system detects:
 •	Expansion into new product categories
@@ -62,6 +68,7 @@ Hiring spikes can indicate:
 •	market expansion
 ________________________________________
 3️⃣ Executive Movement Tracking
+
 Leadership changes are powerful indicators of strategic direction.
 The system monitors:
 •	C-suite transitions
@@ -73,6 +80,7 @@ This provides early signals of:
 •	new innovation initiatives
 ________________________________________
 4️⃣ Glassdoor Sentiment Intelligence
+
 Employee sentiment provides insights into internal stability.
 The platform periodically captures snapshots of:
 •	employee satisfaction trends
@@ -84,6 +92,7 @@ These trends can reveal:
 •	culture deterioration
 ________________________________________
 5️⃣ Press & Media Monitoring
+
 Tracks competitor visibility across:
 •	press releases
 •	podcasts
@@ -92,6 +101,7 @@ Tracks competitor visibility across:
 The system produces a daily digest summarizing key developments and strategic messaging from competitors.
 ________________________________________
 6️⃣ Product Change Monitoring
+
 The platform continuously scans:
 •	pricing pages
 •	product changelogs
@@ -104,6 +114,7 @@ Using structured diff tracking, it identifies:
 This ensures PMs never miss a competitor product evolution.
 ________________________________________
 🧩 Platform Architecture
+
 The platform integrates multiple data sources using Crustdata APIs to construct a unified competitive intelligence layer.
 Data Ingestion Layer
 Key APIs include:
@@ -139,6 +150,7 @@ Cross-references signals across datasets.
 Generates daily briefings and real-time alerts.
 ________________________________________
 🧠 Intelligence Modules
+
 Competitor Social Reactor Overlap
 Detects when shared audiences engage with competitor content.
 Insights include:
@@ -147,6 +159,7 @@ Insights include:
 •	emerging competitive narratives
 ________________________________________
 Hiring Signal Analyzer
+
 Maps competitor hiring patterns to potential strategic priorities.
 Example signals:
 •	spike in AI engineering hires
@@ -154,6 +167,7 @@ Example signals:
 •	growth in international sales
 ________________________________________
 Executive Movement Tracker
+
 Tracks leadership transitions across companies.
 Signals include:
 •	executive departures
@@ -161,19 +175,21 @@ Signals include:
 •	strategic advisory appointments
 ________________________________________
 Glassdoor Sentiment Trend Analysis
+
 Identifies organizational health signals including:
 •	employee morale decline
 •	leadership dissatisfaction
 •	positive culture momentum
 ________________________________________
-Media & Thought Leadership Digest
-Daily AI-generated summaries of:
+Media & Thought Leadership Digest Daily AI-generated summaries of:
+
 •	press coverage
 •	podcast appearances
 •	keynote talks
 •	interviews
 ________________________________________
 🤖 AI Agent Capabilities
+
 The system uses autonomous agents to answer questions such as:
 •	“Which of my key accounts are engaging with Competitor X?”
 •	“What strategic areas is Competitor Y hiring for?”
@@ -181,7 +197,8 @@ The system uses autonomous agents to answer questions such as:
 •	“Are employees at Competitor X showing declining sentiment?”
 Agents combine multiple data signals to provide contextual intelligence instead of raw data.
 ________________________________________
-🧪 Recommended Hackathon Demo
+🧪 Hackathon Project Demo
+
 Step 1 — User Input
 The user enters two competitor company names.
 Example:
@@ -189,6 +206,7 @@ Competitor A: Company X
 Competitor B: Company Y
 ________________________________________
 Step 2 — Automated Intelligence Generation
+
 The agent automatically generates a live competitive briefing dashboard including:
 •	recent social posts
 •	reactor engagement analysis
@@ -199,6 +217,7 @@ The agent automatically generates a live competitive briefing dashboard includin
 •	press coverage digest
 ________________________________________
 Step 3 — Daily Intelligence Delivery
+
 Every morning a Slack bot posts a competitive intelligence briefing summarizing:
 •	competitor social activity
 •	hiring changes
@@ -208,6 +227,7 @@ Every morning a Slack bot posts a competitive intelligence briefing summarizing:
 ________________________________________
 Step 4 — On-Demand Intelligence Queries
 PMs can ask questions such as:
+
 “Which accounts in my customer list are engaging with Competitor X content?”
 The system analyzes reactor overlap and returns the answer.
 ________________________________________
@@ -232,6 +252,7 @@ Storage
 •	vector database for signal embeddings
 ________________________________________
 📊 Market Validation
+
 This approach aligns with emerging practices in martech and adtech ecosystems.
 Organizations are already using Crustdata social reactor APIs to detect when their key accounts engage with competitor content.
 Applications include:
@@ -245,6 +266,7 @@ Companies are combining these signals with:
 to build comprehensive competitor health dashboards.
 ________________________________________
 🌎 Future Roadmap
+
 Potential extensions include:
 Predictive Competitive Strategy
 Forecast competitor moves using historical signals.
@@ -256,6 +278,7 @@ Product Feature Comparison Engine
 Automated feature-parity monitoring across competitors.
 ________________________________________
 🎯 Why This Project Matters
+
 Product strategy today requires continuous situational awareness.
 This platform transforms scattered signals into a real-time competitive intelligence layer, enabling product managers to:
 •	anticipate competitor strategy
@@ -266,6 +289,7 @@ In the era of AI-native workflows, product teams should not manually track compe
 Instead, intelligence should flow to them automatically.
 ________________________________________
 🏁 Conclusion
+
 The AI-Native Competitive Intelligence Platform represents a new category of tooling for product managers — one where competitive awareness becomes continuous, structured, and proactive.
 By integrating real-time signals from social engagement, hiring trends, executive movements, employee sentiment, and media coverage, the platform acts as a living intelligence system that continuously monitors the competitive landscape.
 In essence, it becomes the “Cursor for PMs” — an ambient AI assistant that ensures product teams never miss a strategic signal again.

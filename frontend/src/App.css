@@ -1,0 +1,25 @@
+.shadow-grid {
+    background-image:
+        linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    background-size: 36px 36px;
+}
+
+.glow-card {
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.12);
+}
+
+.reveal-up {
+    animation: revealUp 500ms ease-out forwards;
+}
+
+@keyframes revealUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

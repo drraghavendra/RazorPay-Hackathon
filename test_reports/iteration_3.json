@@ -1,0 +1,66 @@
+{
+  "summary": "Executed backend pytest and frontend Playwright regression on public URL for live-only intelligence + LLM dashboard behavior. Core dashboard/comparison/chat flows work under longer latency, but product channel visibility and live-source channel reliability have gaps.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "/api/intelligence/briefing",
+        "issue": "Crustdata web-search and web-fetch calls return 403 Forbidden in backend logs, so news/product channels are frequently empty even for known competitors.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "/api/intelligence/briefing",
+        "issue": "For empty competitors, strategic_summary can be overwritten by generic summary text (e.g., suggests hiring focus) despite zero hiring/news/social metrics."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Dashboard results grid",
+        "issue": "No Product Changes panel/empty state is rendered, so live-only empty state requirement is not represented for product channel.",
+        "selector": "[data-testid*='product']",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Form -> Processing -> Results",
+        "issue": "News and product channels remain empty largely due upstream 403s from Crustdata web-search/web-fetch, not just true no-data cases.",
+        "affected_selectors": [
+          "[data-testid='news-empty-0']",
+          "[data-testid='news-empty-1']"
+        ]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_intelligence_endpoints.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Add product changes section on dashboard with explicit empty-state messaging and data-testid coverage.",
+    "Fix Crustdata permissions/endpoint contract for /screener/web-search and /screener/web-fetch to restore live news/product ingestion.",
+    "Keep empty-company strategic_summary consistent with zero-data state (do not overwrite with inferred hiring focus text)."
+  ],
+  "critical_code_review_comments": [
+    "Live source status is correctly returned in source_status, but competitor-level source metadata is omitted from response model; if UI needs per-company provenance details, include explicit fields in response schema.",
+    "_build_company_summary currently runs for all companies, including empty payloads, causing contradictory strategic text in zero-data scenarios."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_intelligence_endpoints.py",
+    "/app/test_reports/iteration_3.json"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "90%"
+  },
+  "seed_data_creation": "No manual seed data created.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend tests now include live-source status, AI live indicator, and empty-channel checks for unknown competitors. Frontend validated processing latency, dashboard result rendering, comparison and chat flows. Verify product channel UI after implementation and re-check Crustdata 403 resolution.",
+  "rca of the issue": "RCA-1: Product/news emptiness is mainly from upstream authorization failures (Crustdata 403 on /screener/web-search and /screener/web-fetch), visible in backend.err.log. RCA-2: Missing product empty-state UI is a frontend coverage gap (no product card/testid). RCA-3: Empty-company strategic summary inconsistency comes from orchestrator applying _build_company_summary after _empty_company_payload generation.",
+  "mocked_api": "MOCKED: none"
+}

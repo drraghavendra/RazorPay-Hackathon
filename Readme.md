@@ -1,5 +1,4 @@
-AI-Native Competitive Intelligence Platform
-A “Cursor for PMs” — YC Spring 2026 RFS Hackathon Project
+# AI-Native Competitive Intelligence Platform
 A living competitive intelligence layer that continuously monitors competitors, surfaces signals, and alerts product managers to threats and opportunities in real time.
 ________________________________________
 📌 Overview

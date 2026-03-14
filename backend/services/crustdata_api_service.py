@@ -137,31 +137,18 @@ class CrustdataAPIService:
         ]
         keyword_tasks = [self._keyword_mentions(query) for query in keyword_queries]
 
-        news_task = self._request(
-            "/screener/web-search",
-            method="POST",
-            json_data={"query": f"{company} product announcement", "limit": 6},
-        )
-        product_changes_task = self._request(
-            "/screener/web-fetch",
-            method="POST",
-            json_data={"url": f"https://{company.lower()}.com/pricing"},
-        )
-
-        company_payload, social_payload, people_payload, keyword_counts, news_payload, product_payload = await asyncio.gather(
+        company_payload, social_payload, people_payload, keyword_counts = await asyncio.gather(
             company_payload_task,
             social_payload_task,
             people_payload_task,
             asyncio.gather(*keyword_tasks),
-            news_task,
-            product_changes_task,
         )
 
         company_records = self._extract_records(company_payload)
         company_health = self._select_best_company_record(company_records, company)
         social_records = self._extract_records(social_payload)
-        news_records = self._extract_records(news_payload)
-        product_records = self._extract_records(product_payload)
+        news_records = social_records
+        product_records = []
         people_records = self._extract_records(people_payload)
 
         if people_payload and isinstance(people_payload, dict) and not people_records:
@@ -192,6 +179,18 @@ class CrustdataAPIService:
                     "posting_date": job.get("posted_at") or job.get("date_posted") or "Unknown",
                 }
             )
+
+        product_records = [
+            {
+                "page": "Hiring Signals",
+                "summary": (
+                    f"New role posted: {item.get('job_title', 'Unknown role')}"
+                    f" in {item.get('department', 'General')}"
+                ),
+                "detected_at": item.get("posting_date") or "Unknown",
+            }
+            for item in hiring_signals[:5]
+        ]
 
         normalized = {
             "company_name": company,
@@ -244,10 +243,10 @@ class CrustdataAPIService:
             "sentiment_trend": sentiment_points,
             "news_coverage": [
                 {
-                    "title": item.get("title") or "News mention",
-                    "source": item.get("source") or item.get("publisher") or "Web",
-                    "published_at": item.get("published_at") or item.get("date") or "Unknown",
-                    "url": item.get("url") or "",
+                    "title": item.get("text") or "LinkedIn mention",
+                    "source": "LinkedIn",
+                    "published_at": item.get("date_posted") or "Unknown",
+                    "url": "",
                 }
                 for item in news_records[:6]
             ],

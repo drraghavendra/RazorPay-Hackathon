@@ -32,8 +32,10 @@ class IntelligenceOrchestrator:
             self._resolve_company_data(normalized_b, normalized_a),
         )
 
-        company_a_data["strategic_summary"] = self._build_company_summary(company_a_data)
-        company_b_data["strategic_summary"] = self._build_company_summary(company_b_data)
+        if company_a_data.get("has_live_data"):
+            company_a_data["strategic_summary"] = self._build_company_summary(company_a_data)
+        if company_b_data.get("has_live_data"):
+            company_b_data["strategic_summary"] = self._build_company_summary(company_b_data)
 
         ai_insights = await self.ai_service.generate_daily_insights(
             company_a_data,

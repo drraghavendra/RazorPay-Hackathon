@@ -108,6 +108,38 @@ def test_live_only_empty_channels_for_missing_companies(api_base: str, api_clien
         assert company_data["sentiment_trend"] == []
 
 
+def test_empty_company_summary_not_overwritten_with_synthetic_text(api_base: str, api_client: requests.Session):
+    """Empty competitors must keep explicit no-live-records summary text."""
+    payload = {"competitor_a": "NoCompanyZXQK", "competitor_b": "NoCompanyYTRP"}
+    response = _request_with_retry("post", f"{api_base}/intelligence/briefing", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    for company_data in [data["competitor_a"], data["competitor_b"]]:
+        assert company_data["strategic_summary"] == "No live records returned for this company."
+        assert "hiring focus includes" not in company_data["strategic_summary"].lower()
+
+
+def test_briefing_response_schema_includes_product_and_source_fields(api_base: str, api_client: requests.Session):
+    """Briefing payload should expose required schema fields for dashboard rendering."""
+    payload = {"competitor_a": "Stripe", "competitor_b": "Adyen"}
+    response = _request_with_retry("post", f"{api_base}/intelligence/briefing", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    assert set(data["source_status"].keys()) == {"competitor_a", "competitor_b", "ai"}
+
+    for company_data in [data["competitor_a"], data["competitor_b"]]:
+        assert isinstance(company_data["news_coverage"], list)
+        assert isinstance(company_data["product_changes"], list)
+        assert isinstance(company_data["strategic_summary"], str)
+
+        if company_data["product_changes"]:
+            first_change = company_data["product_changes"][0]
+            assert "change_summary" in first_change
+            assert isinstance(first_change["change_summary"], str)
+
+
 def test_latest_briefing_returns_expected_competitors(api_base: str, api_client: requests.Session):
     """Latest endpoint returns last report for requested competitor pair."""
     params = {"competitor_a": "Stripe", "competitor_b": "Adyen"}

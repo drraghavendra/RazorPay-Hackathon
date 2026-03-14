@@ -558,6 +558,30 @@ const DashboardPage = () => {
                     )}
                   </div>
                 ))}
+
+                <div className="border-t border-border/50 pt-3" data-testid="product-changes-section">
+                  <p className="mb-2 text-xs uppercase tracking-[0.2em] text-accent">Product Changes</p>
+                  {[competitorAData, competitorBData].map((company, index) => (
+                    <div key={`${company.company_name}-product`} data-testid={`product-company-section-${index}`} className="mb-3">
+                      <p className="mb-1 font-semibold text-foreground">{company.company_name}</p>
+                      {company.product_changes.length > 0 ? (
+                        company.product_changes.slice(0, 2).map((change, changeIndex) => (
+                          <p
+                            key={`${company.company_name}-product-${changeIndex}`}
+                            data-testid={`product-change-${index}-${changeIndex}`}
+                            className="mb-1 rounded-sm bg-secondary/40 p-2"
+                          >
+                            {change.change_summary}
+                          </p>
+                        ))
+                      ) : (
+                        <p data-testid={`product-empty-${index}`} className="text-xs text-muted-foreground">
+                          No live product changes returned.
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </motion.div>

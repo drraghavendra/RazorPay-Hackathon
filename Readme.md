@@ -1,3 +1,5 @@
+# TEAM Creative Intelligence
+
 # AI-Native Competitive Intelligence Platform
 A living competitive intelligence layer that continuously monitors competitors, surfaces signals, and alerts product managers to threats and opportunities in real time.
 ________________________________________

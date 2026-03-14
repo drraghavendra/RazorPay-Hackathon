@@ -1,0 +1,154 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "ShadowIntel",
+      "archetype": "The Electric & Neon Analyst",
+      "vibe": "Stealth, Precision, Predictive, High-Contrast",
+      "emotion": "Confidence in Chaos"
+    },
+    "typography": {
+      "fonts": {
+        "heading": {
+          "family": "Manrope",
+          "weights": ["600", "800"],
+          "usage": "Page titles, Card headers, Metric labels"
+        },
+        "body": {
+          "family": "Inter",
+          "weights": ["400", "500"],
+          "usage": "Long form text, descriptions, news summaries"
+        },
+        "mono": {
+          "family": "JetBrains Mono",
+          "weights": ["400", "500"],
+          "usage": "Data tables, Tickers, Code snippets, Financial metrics"
+        }
+      },
+      "scale": {
+        "h1": "text-4xl md:text-6xl font-extrabold tracking-tight leading-none",
+        "h2": "text-3xl md:text-4xl font-bold tracking-tight",
+        "h3": "text-xl md:text-2xl font-semibold tracking-normal",
+        "body_lg": "text-lg leading-relaxed text-muted-foreground",
+        "body_sm": "text-sm leading-normal text-muted-foreground",
+        "caption": "text-xs font-mono uppercase tracking-widest text-muted-foreground/60"
+      }
+    },
+    "colors": {
+      "mode": "dark",
+      "palette": {
+        "background": "#0B0C15",
+        "foreground": "#E2E8F0",
+        "card": "#12141C",
+        "card_foreground": "#F8FAFC",
+        "popover": "#12141C",
+        "popover_foreground": "#F8FAFC",
+        "primary": "#6366F1",
+        "primary_foreground": "#FFFFFF",
+        "secondary": "#1E293B",
+        "secondary_foreground": "#F8FAFC",
+        "muted": "#1E293B",
+        "muted_foreground": "#94A3B8",
+        "accent": "#22D3EE",
+        "accent_foreground": "#0F172A",
+        "destructive": "#EF4444",
+        "destructive_foreground": "#FFFFFF",
+        "border": "#2D3042",
+        "input": "#2D3042",
+        "ring": "#6366F1"
+      },
+      "chart_colors": {
+        "chart_1": "#6366F1",
+        "chart_2": "#22D3EE",
+        "chart_3": "#10B981",
+        "chart_4": "#F59E0B",
+        "chart_5": "#EC4899"
+      },
+      "gradients": {
+        "hero_glow": "radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, rgba(11, 12, 21, 0) 70%)",
+        "card_shimmer": "linear-gradient(110deg, #12141C 8%, #1E202E 18%, #12141C 33%)"
+      }
+    },
+    "layout": {
+      "spacing": {
+        "container_padding": "p-6 md:p-12",
+        "section_gap": "gap-8",
+        "grid_gap": "gap-6"
+      },
+      "radius": {
+        "default": "rounded-md",
+        "button": "rounded-sm",
+        "card": "rounded-lg"
+      },
+      "grid_patterns": {
+        "dashboard": "grid grid-cols-1 md:grid-cols-12 auto-rows-min gap-6",
+        "bento_hero": "col-span-full md:col-span-8 row-span-2",
+        "bento_side": "col-span-full md:col-span-4 row-span-1"
+      }
+    },
+    "effects": {
+      "glass": "bg-background/80 backdrop-blur-xl border border-white/5",
+      "neon_border": "border border-primary/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]",
+      "subtle_shadow": "shadow-lg shadow-black/40"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-medium",
+      "ghost": "hover:bg-accent/10 hover:text-accent transition-colors"
+    },
+    "cards": {
+      "base": "bg-card border border-border/40 shadow-sm relative overflow-hidden group",
+      "hover_effect": "hover:border-primary/50 transition-colors duration-300"
+    },
+    "inputs": {
+      "base": "bg-background/50 border-input focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all font-mono text-sm"
+    }
+  },
+  "assets": {
+    "images": {
+      "hero_background": {
+        "url": "https://images.unsplash.com/photo-1702726001096-096efcf640b8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHw0fHx0ZWNoJTIwb2ZmaWNlJTIwYWJzdHJhY3QlMjBkYXJrJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3NzM0NzU4NDN8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Dark tech office abstract"
+      },
+      "ai_analyst": {
+        "url": "https://images.unsplash.com/photo-1758518727888-ffa196002e59?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNTl8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMGV4ZWN1dGl2ZSUyMHBvcnRyYWl0JTIwcHJvZmVzc2lvbmFsfGVufDB8fHx8MTc3MzQ3NTg0NHww&ixlib=rb-4.1.0&q=85",
+        "alt": "AI Intelligence Avatar"
+      },
+      "competitor_generic": {
+        "url": "https://images.unsplash.com/photo-1668713239048-0746aac1fec1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwyfHx0ZWNoJTIwb2ZmaWNlJTIwYWJzdHJhY3QlMjBkYXJrJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3NzM0NzU4NDN8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Digital Interface"
+      }
+    },
+    "icons": {
+      "library": "lucide-react",
+      "styles": "stroke-[1.5px] w-5 h-5"
+    }
+  },
+  "instructions_to_main_agent": {
+    "setup": [
+      "Install dependencies: `npm install lucide-react framer-motion clsx tailwind-merge`",
+      "Configure Tailwind: Update `tailwind.config.js` with the provided colors and font families.",
+      "Global CSS: Add `@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;600;800&display=swap');` to `index.css`.",
+      "Clean up: Remove default generic `App.css` styles."
+    ],
+    "layout_rules": [
+      "Use the Bento Grid strategy. Dashboard should not be a simple list of cards.",
+      "Hero section: Comparison at a glance (Stripe vs Adyen).",
+      "Sidebar: Thin, collapsible, with glassmorphism.",
+      "Graphs: Use `recharts` with the custom `chart_colors` palette.",
+      "Cards: Must have a subtle 1px border. No heavy drop shadows. Use 'glow' effects sparingly."
+    ],
+    "specific_pages": {
+      "home": "Dashboard with 'Intelligence Feed' (Twitter/News) and 'Metric Tickers'.",
+      "comparison": "Split screen or 2-column layout. High contrast between Competitor A (Stripe) and Competitor B (Adyen).",
+      "chat": "Chat interface should look like a terminal/IDE. Dark background, monospace font for AI responses."
+    },
+    "universal_guidelines": [
+      "Do NOT use gradients for text. It's hard to read.",
+      "Do NOT center align dashboard text. Keep it left-aligned for scanning.",
+      "Use `data-testid` on all interactive elements.",
+      "Ensure all text has sufficient contrast (APCA standards).",
+      "For 'Shadow' vibe, use dark grays and blues, avoid warm colors unless for alerts (Red/Orange)."
+    ]
+  }
+}

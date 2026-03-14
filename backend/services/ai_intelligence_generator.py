@@ -20,7 +20,7 @@ class AIIntelligenceGenerator:
         self.provider = "openai"
         self.request_timeout_seconds = float(os.environ.get("OPENAI_REQUEST_TIMEOUT_SECONDS", "12"))
         self.daily_briefing_ai_enabled = (
-            os.environ.get("OPENAI_DAILY_BRIEFING_ENABLED", "false").lower() == "true"
+            os.environ.get("OPENAI_DAILY_BRIEFING_ENABLED", "true").lower() == "true"
         )
 
     @property
@@ -98,9 +98,9 @@ class AIIntelligenceGenerator:
         competitor_a: Dict[str, Any],
         competitor_b: Dict[str, Any],
     ) -> Dict[str, Any]:
-        default = self._fallback_daily_insights(competitor_a, competitor_b)
-        if not self.daily_briefing_ai_enabled:
-            return default
+        unavailable = self._unavailable_daily_insights()
+        if not self.daily_briefing_ai_enabled or not self.is_configured:
+            return unavailable
 
         prompt = f"""
         Generate strategic intelligence JSON with keys:
@@ -118,19 +118,25 @@ class AIIntelligenceGenerator:
             prompt,
         )
         if not generated:
-            return default
+            return unavailable
 
         return {
-            "daily_brief": generated.get("daily_brief", default["daily_brief"]),
-            "risk_alerts": generated.get("risk_alerts", default["risk_alerts"]),
-            "opportunity_signals": generated.get(
-                "opportunity_signals",
-                default["opportunity_signals"],
-            ),
-            "roadmap_inference": generated.get(
-                "roadmap_inference",
-                default["roadmap_inference"],
-            ),
+            "daily_brief": str(generated.get("daily_brief") or "No live AI briefing returned."),
+            "risk_alerts": [
+                item
+                for item in (generated.get("risk_alerts") if isinstance(generated.get("risk_alerts"), list) else [])
+                if isinstance(item, str)
+            ],
+            "opportunity_signals": [
+                item
+                for item in (
+                    generated.get("opportunity_signals")
+                    if isinstance(generated.get("opportunity_signals"), list)
+                    else []
+                )
+                if isinstance(item, str)
+            ],
+            "roadmap_inference": str(generated.get("roadmap_inference") or "No roadmap inference returned."),
         }
 
     async def answer_competitive_question(
@@ -139,11 +145,6 @@ class AIIntelligenceGenerator:
         context_report: Dict[str, Any],
         history: List[Dict[str, str]],
     ) -> str:
-        fallback = (
-            "Signal check complete: both competitors show activity across hiring, social engagement, "
-            "and market visibility. Ask about hiring, sentiment, or roadmap inference for a focused answer."
-        )
-
         prompt = f"""
         Answer as ShadowIntel AI assistant for product managers.
         Question: {question}
@@ -159,50 +160,12 @@ class AIIntelligenceGenerator:
             "You are a strategic product intelligence analyst.",
             prompt,
         )
-        return generated or fallback
+        return generated or "Live AI chat response unavailable right now."
 
-    def _fallback_daily_insights(
-        self,
-        competitor_a: Dict[str, Any],
-        competitor_b: Dict[str, Any],
-    ) -> Dict[str, Any]:
-        a_metrics = competitor_a.get("company_metrics", {})
-        b_metrics = competitor_b.get("company_metrics", {})
-
-        daily_brief = (
-            f"{competitor_a['company_name']} and {competitor_b['company_name']} both show sustained signal activity. "
-            "Hiring and social engagement indicate continued investment in AI-enabled product capabilities."
-        )
-        risk_alerts = [
-            (
-                f"{competitor_a['company_name']} headcount growth at "
-                f"{a_metrics.get('headcount_growth_pct', 0)}% can shorten enterprise sales cycles."
-            ),
-            (
-                f"{competitor_b['company_name']} social engagement around AI themes suggests messaging momentum."
-            ),
-            "Executive movement signals indicate potential acceleration in roadmap execution.",
-        ]
-        opportunity_signals = [
-            "Declining employee sentiment can open recruiting and partnership opportunities.",
-            "Shared audience engagement creates room for targeted differentiation campaigns.",
-            "Feature-change monitoring reveals openings for faster release velocity.",
-        ]
-        roadmap_inference = (
-            "Both competitors are likely expanding AI-assisted risk workflows and enterprise controls. "
-            "Prioritize roadmap bets on explainability, reliability, and integrations."
-        )
-
-        b_growth = b_metrics.get("headcount_growth_pct", 0)
-        if b_growth > a_metrics.get("headcount_growth_pct", 0):
-            daily_brief = (
-                f"{competitor_b['company_name']} appears to be accelerating faster than "
-                f"{competitor_a['company_name']} based on talent and coverage signals."
-            )
-
+    def _unavailable_daily_insights(self) -> Dict[str, Any]:
         return {
-            "daily_brief": daily_brief,
-            "risk_alerts": risk_alerts,
-            "opportunity_signals": opportunity_signals,
-            "roadmap_inference": roadmap_inference,
+            "daily_brief": "Live AI briefing unavailable.",
+            "risk_alerts": [],
+            "opportunity_signals": [],
+            "roadmap_inference": "Live AI roadmap inference unavailable.",
         }

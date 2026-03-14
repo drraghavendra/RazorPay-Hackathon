@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 from typing import Any, Dict, List
-from datetime import datetime, timezone
+from datetime import datetime
 
 import httpx
 
@@ -89,23 +89,6 @@ class CrustdataAPIService:
         )
         return len(self._extract_records(payload))
 
-    @staticmethod
-    def _build_sentiment_series(current_rating: float) -> List[Dict[str, Any]]:
-        if not current_rating:
-            return []
-        now = datetime.now(timezone.utc)
-        months = []
-        for offset in [2, 1, 0]:
-            month_index = now.month - offset
-            year = now.year
-            while month_index <= 0:
-                month_index += 12
-                year -= 1
-            month_label = datetime(year, month_index, 1, tzinfo=timezone.utc).strftime("%b")
-            drift = (offset - 1) * 0.12
-            months.append({"month": month_label, "rating": round(max(1.0, min(5.0, current_rating - drift)), 1)})
-        return months
-
     async def fetch_company_intelligence(self, company: str, rival: str) -> Dict[str, Any]:
         company_payload_task = self._request(
             "/screener/company",
@@ -147,21 +130,38 @@ class CrustdataAPIService:
             },
         )
 
-        primary_keyword_query = f"{company} AI payments"
-        keyword_tasks = [self._keyword_mentions(primary_keyword_query)]
+        keyword_queries = [
+            f"{company} AI payments",
+            f"{rival} fraud detection",
+            "OpenAI fintech",
+        ]
+        keyword_tasks = [self._keyword_mentions(query) for query in keyword_queries]
 
-        company_payload, social_payload, people_payload, keyword_counts = await asyncio.gather(
+        news_task = self._request(
+            "/screener/web-search",
+            method="POST",
+            json_data={"query": f"{company} product announcement", "limit": 6},
+        )
+        product_changes_task = self._request(
+            "/screener/web-fetch",
+            method="POST",
+            json_data={"url": f"https://{company.lower()}.com/pricing"},
+        )
+
+        company_payload, social_payload, people_payload, keyword_counts, news_payload, product_payload = await asyncio.gather(
             company_payload_task,
             social_payload_task,
             people_payload_task,
             asyncio.gather(*keyword_tasks),
+            news_task,
+            product_changes_task,
         )
 
         company_records = self._extract_records(company_payload)
         company_health = self._select_best_company_record(company_records, company)
         social_records = self._extract_records(social_payload)
-        news_records: List[Dict[str, Any]] = []
-        product_records: List[Dict[str, Any]] = []
+        news_records = self._extract_records(news_payload)
+        product_records = self._extract_records(product_payload)
         people_records = self._extract_records(people_payload)
 
         if people_payload and isinstance(people_payload, dict) and not people_records:
@@ -172,8 +172,12 @@ class CrustdataAPIService:
         web_traffic_block = company_health.get("web_traffic") or {}
         glassdoor_block = company_health.get("glassdoor") or {}
 
-        sentiment_points = self._build_sentiment_series(
-            float(glassdoor_block.get("glassdoor_overall_rating") or 0)
+        glassdoor_rating = float(glassdoor_block.get("glassdoor_overall_rating") or 0)
+        current_month = datetime.now().strftime("%b")
+        sentiment_points = (
+            [{"month": current_month, "rating": round(glassdoor_rating, 2)}]
+            if glassdoor_rating > 0
+            else []
         )
 
         hiring_signals = []
@@ -203,17 +207,10 @@ class CrustdataAPIService:
             ],
             "keyword_trends": [
                 {
-                    "keyword": primary_keyword_query,
-                    "mentions": keyword_counts[0] if keyword_counts else 0,
-                },
-                {
-                    "keyword": f"{rival} fraud detection",
-                    "mentions": max(0, int((keyword_counts[0] if keyword_counts else 0) * 0.65)),
-                },
-                {
-                    "keyword": "OpenAI fintech",
-                    "mentions": max(0, int((keyword_counts[0] if keyword_counts else 0) * 0.45)),
-                },
+                    "keyword": keyword,
+                    "mentions": keyword_counts[index] if index < len(keyword_counts) else 0,
+                }
+                for index, keyword in enumerate(keyword_queries)
             ],
             "people_intelligence": [
                 {
@@ -241,7 +238,7 @@ class CrustdataAPIService:
                 or 0,
                 "job_openings": job_block.get("job_openings_count") or 0,
                 "web_traffic_index": web_traffic_block.get("monthly_visitors") or 0,
-                "glassdoor_rating": glassdoor_block.get("glassdoor_overall_rating") or 0,
+                "glassdoor_rating": glassdoor_rating,
             },
             "hiring_signals": hiring_signals,
             "sentiment_trend": sentiment_points,
@@ -262,7 +259,19 @@ class CrustdataAPIService:
                 }
                 for item in product_records[:5]
             ],
-            "executive_movements": [],
+            "executive_movements": [
+                {
+                    "name": item.get("name") or "Unknown",
+                    "movement": item.get("headline") or "Executive signal identified",
+                    "date": item.get("updated_at") or item.get("created_at") or "Unknown",
+                }
+                for item in people_records[:5]
+                if isinstance(item.get("headline"), str)
+                and any(
+                    keyword in item.get("headline", "").lower()
+                    for keyword in ["chief", "ceo", "cto", "vp", "head", "director"]
+                )
+            ],
         }
 
         has_live_data = any(
@@ -270,7 +279,8 @@ class CrustdataAPIService:
                 normalized["social_activity"],
                 normalized["hiring_signals"],
                 normalized["news_coverage"],
-                normalized["keyword_trends"],
+                normalized["people_intelligence"],
+                any(value for value in normalized["company_metrics"].values()),
             ]
         )
 

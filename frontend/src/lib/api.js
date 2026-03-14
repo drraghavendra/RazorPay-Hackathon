@@ -5,7 +5,7 @@ const API_BASE = `${BACKEND_URL}/api`;
 
 const client = axios.create({
   baseURL: API_BASE,
-  timeout: 30000,
+  timeout: 120000,
 });
 
 const parseError = (error) => {

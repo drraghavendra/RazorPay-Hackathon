@@ -7,7 +7,6 @@ import uuid
 
 from services.ai_intelligence_generator import AIIntelligenceGenerator
 from services.crustdata_api_service import CrustdataAPIService
-from services.demo_data import generate_company_demo
 
 
 class IntelligenceOrchestrator:
@@ -16,12 +15,13 @@ class IntelligenceOrchestrator:
         self.ai_service = AIIntelligenceGenerator()
 
     async def _resolve_company_data(self, company: str, rival: str) -> Dict[str, Any]:
-        if self.crustdata_service.is_configured:
-            live_data = await self.crustdata_service.fetch_company_intelligence(company, rival)
-            if live_data.get("has_live_data"):
-                return live_data
+        if not self.crustdata_service.is_configured:
+            return self._empty_company_payload(company)
 
-        return generate_company_demo(company, rival)
+        live_data = await self.crustdata_service.fetch_company_intelligence(company, rival)
+        if live_data.get("has_live_data"):
+            return live_data
+        return self._empty_company_payload(company)
 
     async def build_daily_briefing(self, competitor_a: str, competitor_b: str) -> Dict[str, Any]:
         normalized_a = competitor_a.strip()
@@ -53,7 +53,7 @@ class IntelligenceOrchestrator:
                 "ai": (
                     "openai-live"
                     if self.ai_service.is_configured and self.ai_service.daily_briefing_ai_enabled
-                    else "heuristic"
+                    else "openai-unavailable"
                 ),
             },
         }
@@ -119,3 +119,27 @@ class IntelligenceOrchestrator:
             f"with {metrics.get('headcount_growth_pct', 0)}% growth and {metrics.get('job_openings', 0)} open roles. "
             f"Recent hiring focus includes {top_job_text}."
         )
+
+    @staticmethod
+    def _empty_company_payload(company: str) -> Dict[str, Any]:
+        return {
+            "company_name": company,
+            "social_activity": [],
+            "keyword_trends": [],
+            "people_intelligence": [],
+            "company_metrics": {
+                "headcount": 0,
+                "headcount_growth_pct": 0,
+                "job_openings": 0,
+                "web_traffic_index": 0,
+                "glassdoor_rating": 0,
+            },
+            "hiring_signals": [],
+            "sentiment_trend": [],
+            "news_coverage": [],
+            "product_changes": [],
+            "executive_movements": [],
+            "strategic_summary": "No live records returned for this company.",
+            "source": "crustdata-empty",
+            "has_live_data": False,
+        }

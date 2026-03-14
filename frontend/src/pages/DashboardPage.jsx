@@ -221,7 +221,7 @@ const DashboardPage = () => {
           </div>
 
           <p data-testid="processing-description" className="mb-6 text-sm text-muted-foreground md:text-lg">
-            We’re collecting and synthesizing competitive intelligence for {competitorA} vs {competitorB}.
+            We’re collecting live competitive intelligence for {competitorA} vs {competitorB}.
           </p>
 
           <div data-testid="processing-steps" className="space-y-3">
@@ -355,28 +355,40 @@ const DashboardPage = () => {
                   <p className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-accent">
                     <AlertTriangle className="h-4 w-4" /> Risk Alerts
                   </p>
-                  <ul className="space-y-2">
-                    {report.ai_insights.risk_alerts.map((risk, index) => (
-                      <li key={risk} data-testid={`risk-alert-${index}`} className="rounded-sm bg-secondary/40 p-2">
-                        {risk}
-                      </li>
-                    ))}
-                  </ul>
+                  {report.ai_insights.risk_alerts.length > 0 ? (
+                    <ul className="space-y-2">
+                      {report.ai_insights.risk_alerts.map((risk, index) => (
+                        <li key={risk} data-testid={`risk-alert-${index}`} className="rounded-sm bg-secondary/40 p-2">
+                          {risk}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p data-testid="risk-alert-empty" className="rounded-sm bg-secondary/30 p-2 text-xs">
+                      No live risk alerts returned.
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.2em] text-accent">Opportunity Signals</p>
-                  <ul className="space-y-2">
-                    {report.ai_insights.opportunity_signals.map((signalItem, index) => (
-                      <li
-                        key={signalItem}
-                        data-testid={`opportunity-signal-${index}`}
-                        className="rounded-sm bg-secondary/40 p-2"
-                      >
-                        {signalItem}
-                      </li>
-                    ))}
-                  </ul>
+                  {report.ai_insights.opportunity_signals.length > 0 ? (
+                    <ul className="space-y-2">
+                      {report.ai_insights.opportunity_signals.map((signalItem, index) => (
+                        <li
+                          key={signalItem}
+                          data-testid={`opportunity-signal-${index}`}
+                          className="rounded-sm bg-secondary/40 p-2"
+                        >
+                          {signalItem}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p data-testid="opportunity-signal-empty" className="rounded-sm bg-secondary/30 p-2 text-xs">
+                      No live opportunity signals returned.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -401,19 +413,25 @@ const DashboardPage = () => {
                     className="rounded-md border border-border/60 bg-background/30 p-3"
                   >
                     <p className="mb-2 font-semibold text-foreground">{company.company_name}</p>
-                    {company.social_activity.slice(0, 2).map((post, postIndex) => (
-                      <div key={`${company.company_name}-${postIndex}`} className="mb-2">
-                        <p data-testid={`social-post-${index}-${postIndex}`} className="text-muted-foreground">
-                          {post.post_content}
-                        </p>
-                        <p
-                          data-testid={`social-reactors-${index}-${postIndex}`}
-                          className="font-mono text-xs text-accent"
-                        >
-                          Reactors: {post.reactor_count}
-                        </p>
-                      </div>
-                    ))}
+                    {company.social_activity.length > 0 ? (
+                      company.social_activity.slice(0, 2).map((post, postIndex) => (
+                        <div key={`${company.company_name}-${postIndex}`} className="mb-2">
+                          <p data-testid={`social-post-${index}-${postIndex}`} className="text-muted-foreground">
+                            {post.post_content}
+                          </p>
+                          <p
+                            data-testid={`social-reactors-${index}-${postIndex}`}
+                            className="font-mono text-xs text-accent"
+                          >
+                            Reactors: {post.reactor_count}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p data-testid={`social-empty-${index}`} className="text-xs text-muted-foreground">
+                        No live social posts returned.
+                      </p>
+                    )}
                   </div>
                 ))}
               </CardContent>
@@ -439,15 +457,21 @@ const DashboardPage = () => {
                     className="rounded-md border border-border/60 bg-background/30 p-3"
                   >
                     <p className="mb-2 font-semibold text-foreground">{company.company_name}</p>
-                    {company.hiring_signals.slice(0, 3).map((job, jobIndex) => (
-                      <p
-                        key={`${job.job_title}-${jobIndex}`}
-                        data-testid={`hiring-job-${index}-${jobIndex}`}
-                        className="mb-1 rounded-sm bg-secondary/40 p-2"
-                      >
-                        {job.job_title} · {job.location}
+                    {company.hiring_signals.length > 0 ? (
+                      company.hiring_signals.slice(0, 3).map((job, jobIndex) => (
+                        <p
+                          key={`${job.job_title}-${jobIndex}`}
+                          data-testid={`hiring-job-${index}-${jobIndex}`}
+                          className="mb-1 rounded-sm bg-secondary/40 p-2"
+                        >
+                          {job.job_title} · {job.location}
+                        </p>
+                      ))
+                    ) : (
+                      <p data-testid={`hiring-empty-${index}`} className="text-xs text-muted-foreground">
+                        No live hiring signals returned.
                       </p>
-                    ))}
+                    )}
                   </div>
                 ))}
               </CardContent>
@@ -467,7 +491,11 @@ const DashboardPage = () => {
               </CardHeader>
               <CardContent>
                 <div ref={sentimentChartRef} data-testid="sentiment-chart" className="h-72 min-w-0 w-full">
-                  {showCharts && sentimentChartSize.width > 20 && sentimentChartSize.height > 20 ? (
+                  {sentimentChart.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                      No live sentiment trend returned.
+                    </div>
+                  ) : showCharts && sentimentChartSize.width > 20 && sentimentChartSize.height > 20 ? (
                     <div className="h-full w-full">
                       <LineChart
                         width={Math.max(sentimentChartSize.width - 12, 280)}
@@ -513,15 +541,21 @@ const DashboardPage = () => {
                 {[competitorAData, competitorBData].map((company, index) => (
                   <div key={company.company_name} data-testid={`news-company-section-${index}`}>
                     <p className="mb-2 font-semibold text-foreground">{company.company_name}</p>
-                    {company.news_coverage.slice(0, 2).map((newsItem, newsIndex) => (
-                      <p
-                        key={`${newsItem.title}-${newsIndex}`}
-                        data-testid={`news-item-${index}-${newsIndex}`}
-                        className="mb-2 rounded-sm bg-secondary/40 p-2"
-                      >
-                        {newsItem.title}
+                    {company.news_coverage.length > 0 ? (
+                      company.news_coverage.slice(0, 2).map((newsItem, newsIndex) => (
+                        <p
+                          key={`${newsItem.title}-${newsIndex}`}
+                          data-testid={`news-item-${index}-${newsIndex}`}
+                          className="mb-2 rounded-sm bg-secondary/40 p-2"
+                        >
+                          {newsItem.title}
+                        </p>
+                      ))
+                    ) : (
+                      <p data-testid={`news-empty-${index}`} className="text-xs text-muted-foreground">
+                        No live news items returned.
                       </p>
-                    ))}
+                    )}
                   </div>
                 ))}
               </CardContent>

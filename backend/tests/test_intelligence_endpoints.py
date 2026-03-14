@@ -62,6 +62,50 @@ def test_generate_briefing_and_validate_schema(api_base: str, api_client: reques
     assert isinstance(data["report_id"], str) and len(data["report_id"]) > 0
     assert "daily_brief" in data["ai_insights"]
     assert isinstance(data["comparison"], dict)
+    assert isinstance(data["source_status"], dict)
+
+    # Strict live-only: no known fallback summary wording should be returned
+    assert data["ai_insights"]["daily_brief"] != "No live AI briefing returned."
+    assert data["ai_insights"]["roadmap_inference"] != "No roadmap inference returned."
+
+
+def test_briefing_source_status_and_live_ai_indicator(api_base: str, api_client: requests.Session):
+    """Briefing source status should be explicit, with AI marked live for dashboard insights."""
+    payload = {"competitor_a": "Stripe", "competitor_b": "Adyen"}
+    response = _request_with_retry("post", f"{api_base}/intelligence/briefing", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    source_status = data["source_status"]
+    assert source_status["competitor_a"] in {"crustdata-live", "crustdata-empty"}
+    assert source_status["competitor_b"] in {"crustdata-live", "crustdata-empty"}
+    assert source_status["ai"] == "openai-live"
+
+    # If AI is marked live, unavailable placeholders should not be returned.
+    assert data["ai_insights"]["daily_brief"] != "Live AI briefing unavailable."
+    assert data["ai_insights"]["roadmap_inference"] != "Live AI roadmap inference unavailable."
+
+
+def test_live_only_empty_channels_for_missing_companies(api_base: str, api_client: requests.Session):
+    """Unknown competitors should return explicit empty live channels (no fabricated records)."""
+    payload = {"competitor_a": "NoCompanyZXQK", "competitor_b": "NoCompanyYTRP"}
+    response = _request_with_retry("post", f"{api_base}/intelligence/briefing", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    comp_a = data["competitor_a"]
+    comp_b = data["competitor_b"]
+    source_status = data["source_status"]
+
+    assert source_status["competitor_a"] == "crustdata-empty"
+    assert source_status["competitor_b"] == "crustdata-empty"
+
+    for company_data in [comp_a, comp_b]:
+        assert company_data["social_activity"] == []
+        assert company_data["hiring_signals"] == []
+        assert company_data["news_coverage"] == []
+        assert company_data["product_changes"] == []
+        assert company_data["sentiment_trend"] == []
 
 
 def test_latest_briefing_returns_expected_competitors(api_base: str, api_client: requests.Session):

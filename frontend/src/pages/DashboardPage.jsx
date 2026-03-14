@@ -1,15 +1,19 @@
 import { motion } from "framer-motion";
 import {
+  CheckCircle2,
+  CircleDashed,
   AlertTriangle,
   Bot,
   Briefcase,
   Building2,
+  ChevronRight,
+  ClipboardList,
   Newspaper,
   RefreshCw,
   Signal,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -24,13 +28,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { generateBriefing, getLatestBriefing } from "@/lib/api";
-import {
-  getStoredCompetitors,
-  getStoredReport,
-  setStoredCompetitors,
-  setStoredReport,
-} from "@/lib/storage";
+import { generateBriefing } from "@/lib/api";
+import { getStoredCompetitors, setStoredCompetitors, setStoredReport } from "@/lib/storage";
 
 const heroImage =
   "https://images.unsplash.com/photo-1702726001096-096efcf640b8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHw0fHx0ZWNoJTIwb2ZmaWNlJTIwYWJzdHJhY3QlMjBkYXJrJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3NzM0NzU4NDN8MA&ixlib=rb-4.1.0&q=85";
@@ -41,12 +40,28 @@ const cardAnimation = {
   transition: { duration: 0.4 },
 };
 
+const processingSteps = [
+  "Validating competitor inputs",
+  "Collecting social, hiring, and people signals",
+  "Aggregating company metrics and sentiment",
+  "Generating AI strategic battlecard",
+];
+
+const StageCard = ({ children, testId }) => (
+  <motion.div {...cardAnimation} data-testid={testId} className="rounded-lg border border-border/60 bg-card/80 p-6">
+    {children}
+  </motion.div>
+);
+
 const DashboardPage = () => {
   const initialCompetitors = getStoredCompetitors();
   const [competitorA, setCompetitorA] = useState(initialCompetitors.competitorA);
   const [competitorB, setCompetitorB] = useState(initialCompetitors.competitorB);
-  const [report, setReport] = useState(getStoredReport());
+  const [report, setReport] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [stage, setStage] = useState("form");
+  const [activeStep, setActiveStep] = useState(0);
+  const stepTimerRef = useRef(null);
 
   const competitorAData = report?.competitor_a;
   const competitorBData = report?.competitor_b;
@@ -60,40 +75,49 @@ const DashboardPage = () => {
     }));
   }, [competitorAData, competitorBData]);
 
-  const loadLatest = async () => {
+  const clearStepTimer = () => {
+    if (stepTimerRef.current) {
+      clearInterval(stepTimerRef.current);
+      stepTimerRef.current = null;
+    }
+  };
+
+  const runBattlecard = async () => {
     setIsLoading(true);
+    setStage("processing");
+    setActiveStep(0);
+
+    clearStepTimer();
+    stepTimerRef.current = setInterval(() => {
+      setActiveStep((previous) => (previous < processingSteps.length - 1 ? previous + 1 : previous));
+    }, 850);
+
+    const minimumProcessingTime = new Promise((resolve) => {
+      setTimeout(resolve, 3200);
+    });
+
     try {
-      const data = await getLatestBriefing({ competitorA, competitorB });
+      const [data] = await Promise.all([
+        generateBriefing({ competitorA, competitorB }),
+        minimumProcessingTime,
+      ]);
       setReport(data);
       setStoredReport(data);
       setStoredCompetitors(competitorA, competitorB);
+      setStage("results");
+      toast.success("Battlecard is ready");
     } catch (error) {
+      setStage("form");
       toast.error(error.message);
     } finally {
+      clearStepTimer();
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (!report) {
-      loadLatest();
-    }
-  }, []);
-
   const handleGenerate = async (event) => {
     event.preventDefault();
-    setIsLoading(true);
-    try {
-      const data = await generateBriefing({ competitorA, competitorB });
-      setReport(data);
-      setStoredReport(data);
-      setStoredCompetitors(competitorA, competitorB);
-      toast.success("Daily competitive briefing refreshed");
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setIsLoading(false);
-    }
+    await runBattlecard();
   };
 
   return (
@@ -109,71 +133,143 @@ const DashboardPage = () => {
           className="h-56 w-full object-cover opacity-30"
           data-testid="dashboard-hero-image"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
-
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-transparent" />
         <div className="absolute inset-0 flex flex-col justify-center gap-4 px-6 md:px-10">
-          <p
-            data-testid="dashboard-hero-label"
-            className="font-mono text-xs uppercase tracking-[0.24em] text-accent"
-          >
-            Morning Competitive Brief
+          <p data-testid="dashboard-hero-label" className="font-mono text-xs uppercase tracking-[0.24em] text-accent">
+            Battlecard Intelligence Flow
           </p>
           <h2 data-testid="dashboard-hero-title" className="text-4xl font-extrabold md:text-6xl">
-            {competitorA} vs {competitorB}
+            Enter Competitors. Watch Signals. Get Strategy.
           </h2>
           <p data-testid="dashboard-hero-subtitle" className="max-w-3xl text-sm text-muted-foreground md:text-lg">
-            ShadowIntel monitors hiring, social traction, company health, sentiment, and market news to
-            predict threats and product opportunities.
+            A guided experience: input competitors, process intelligence signals, and view a polished
+            strategic battlecard.
           </p>
         </div>
       </motion.div>
 
-      <motion.form
-        {...cardAnimation}
-        transition={{ duration: 0.4, delay: 0.08 }}
-        onSubmit={handleGenerate}
-        data-testid="competitor-input-form"
-        className="grid grid-cols-1 gap-4 rounded-lg border border-border/60 bg-card/80 p-5 md:grid-cols-[1fr_1fr_auto_auto]"
-      >
-        <Input
-          data-testid="competitor-a-input"
-          value={competitorA}
-          onChange={(event) => setCompetitorA(event.target.value)}
-          placeholder="Competitor A"
-          className="bg-background/50 font-mono"
-          required
-        />
-        <Input
-          data-testid="competitor-b-input"
-          value={competitorB}
-          onChange={(event) => setCompetitorB(event.target.value)}
-          placeholder="Competitor B"
-          className="bg-background/50 font-mono"
-          required
-        />
-        <Button
-          data-testid="generate-briefing-button"
-          type="submit"
-          disabled={isLoading}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          {isLoading ? "Generating..." : "Generate Briefing"}
-        </Button>
-        <Button
-          data-testid="load-latest-button"
-          type="button"
-          variant="outline"
-          onClick={loadLatest}
-          disabled={isLoading}
-          className="border-border/80 bg-background/50"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Latest
-        </Button>
-      </motion.form>
+      {stage === "form" && (
+        <StageCard testId="battlecard-form-stage">
+          <div className="mb-6 flex items-center gap-3">
+            <ClipboardList className="h-6 w-6 text-primary" />
+            <h3 data-testid="battlecard-form-title" className="text-2xl font-bold">
+              Build Competitor Battlecard
+            </h3>
+          </div>
 
-      {report && (
+          <form
+            onSubmit={handleGenerate}
+            data-testid="competitor-input-form"
+            className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_auto]"
+          >
+            <Input
+              data-testid="competitor-a-input"
+              value={competitorA}
+              onChange={(event) => setCompetitorA(event.target.value)}
+              placeholder="Competitor A"
+              className="bg-background/50 font-mono"
+              required
+            />
+            <Input
+              data-testid="competitor-b-input"
+              value={competitorB}
+              onChange={(event) => setCompetitorB(event.target.value)}
+              placeholder="Competitor B"
+              className="bg-background/50 font-mono"
+              required
+            />
+            <Button
+              data-testid="generate-briefing-button"
+              type="submit"
+              disabled={isLoading}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Start Battlecard <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          </form>
+        </StageCard>
+      )}
+
+      {stage === "processing" && (
+        <StageCard testId="processing-stage">
+          <div className="mb-6 flex items-center gap-3">
+            <CircleDashed className="h-6 w-6 animate-spin text-primary" />
+            <h3 data-testid="processing-title" className="text-2xl font-bold">
+              Processing Battlecard
+            </h3>
+          </div>
+
+          <p data-testid="processing-description" className="mb-6 text-sm text-muted-foreground md:text-lg">
+            We’re collecting and synthesizing competitive intelligence for {competitorA} vs {competitorB}.
+          </p>
+
+          <div data-testid="processing-steps" className="space-y-3">
+            {processingSteps.map((step, index) => {
+              const isDone = index < activeStep;
+              const isCurrent = index === activeStep;
+              return (
+                <div
+                  key={step}
+                  data-testid={`processing-step-${index}`}
+                  className={[
+                    "flex items-center gap-3 rounded-md border p-3",
+                    isDone
+                      ? "border-emerald-500/40 bg-emerald-500/10"
+                      : isCurrent
+                        ? "border-primary/40 bg-primary/10"
+                        : "border-border/60 bg-background/50",
+                  ].join(" ")}
+                >
+                  {isDone ? (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  ) : (
+                    <CircleDashed className={isCurrent ? "h-5 w-5 animate-spin text-primary" : "h-5 w-5 text-muted-foreground"} />
+                  )}
+                  <span className="text-sm md:text-base">{step}</span>
+                </div>
+              );
+            })}
+          </div>
+        </StageCard>
+      )}
+
+      {stage === "results" && report && (
         <div data-testid="dashboard-bento-grid" className="grid grid-cols-1 gap-6 md:grid-cols-12">
+          <motion.div
+            {...cardAnimation}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="md:col-span-12"
+          >
+            <Card data-testid="battlecard-results-header" className="border-border/60 bg-card/80">
+              <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-6">
+                <div>
+                  <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">Battlecard Result</p>
+                  <h3 data-testid="results-title" className="text-3xl font-extrabold md:text-4xl">
+                    {competitorAData.company_name} vs {competitorBData.company_name}
+                  </h3>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    data-testid="new-battlecard-button"
+                    variant="outline"
+                    onClick={() => setStage("form")}
+                    className="border-border/70 bg-background/50"
+                  >
+                    New Battlecard
+                  </Button>
+                  <Button
+                    data-testid="refresh-battlecard-button"
+                    onClick={runBattlecard}
+                    disabled={isLoading}
+                    className="bg-primary text-primary-foreground"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
           <motion.div
             {...cardAnimation}
             transition={{ duration: 0.4, delay: 0.12 }}

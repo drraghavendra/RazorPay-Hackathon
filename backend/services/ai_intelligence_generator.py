@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -17,6 +18,10 @@ class AIIntelligenceGenerator:
         self.api_key = os.environ.get("OPENAI_API_KEY")
         self.model = os.environ.get("OPENAI_MODEL", "gpt-5.2")
         self.provider = "openai"
+        self.request_timeout_seconds = float(os.environ.get("OPENAI_REQUEST_TIMEOUT_SECONDS", "12"))
+        self.daily_briefing_ai_enabled = (
+            os.environ.get("OPENAI_DAILY_BRIEFING_ENABLED", "false").lower() == "true"
+        )
 
     @property
     def is_configured(self) -> bool:
@@ -31,7 +36,10 @@ class AIIntelligenceGenerator:
                 session_id=str(uuid.uuid4()),
                 system_message=system_prompt,
             ).with_model(self.provider, self.model)
-            content = await chat.send_message(UserMessage(text=user_prompt))
+            content = await asyncio.wait_for(
+                chat.send_message(UserMessage(text=user_prompt)),
+                timeout=self.request_timeout_seconds,
+            )
             content = content or "{}"
             content = content.strip().removeprefix("```json").removesuffix("```").strip()
             return json.loads(content)
@@ -48,7 +56,10 @@ class AIIntelligenceGenerator:
                 session_id=str(uuid.uuid4()),
                 system_message=system_prompt,
             ).with_model(self.provider, self.model)
-            response = await chat.send_message(UserMessage(text=user_prompt))
+            response = await asyncio.wait_for(
+                chat.send_message(UserMessage(text=user_prompt)),
+                timeout=self.request_timeout_seconds,
+            )
             return (response or "").strip()
         except Exception as exc:  # noqa: BLE001
             logger.warning("OpenAI text generation failed: %s", exc)
@@ -88,6 +99,8 @@ class AIIntelligenceGenerator:
         competitor_b: Dict[str, Any],
     ) -> Dict[str, Any]:
         default = self._fallback_daily_insights(competitor_a, competitor_b)
+        if not self.daily_briefing_ai_enabled:
+            return default
 
         prompt = f"""
         Generate strategic intelligence JSON with keys:

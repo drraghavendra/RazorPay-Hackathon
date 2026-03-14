@@ -32,12 +32,8 @@ class IntelligenceOrchestrator:
             self._resolve_company_data(normalized_b, normalized_a),
         )
 
-        summary_a, summary_b = await asyncio.gather(
-            self.ai_service.generate_company_summary(company_a_data),
-            self.ai_service.generate_company_summary(company_b_data),
-        )
-        company_a_data["strategic_summary"] = summary_a
-        company_b_data["strategic_summary"] = summary_b
+        company_a_data["strategic_summary"] = self._build_company_summary(company_a_data)
+        company_b_data["strategic_summary"] = self._build_company_summary(company_b_data)
 
         ai_insights = await self.ai_service.generate_daily_insights(
             company_a_data,
@@ -54,7 +50,11 @@ class IntelligenceOrchestrator:
             "source_status": {
                 "competitor_a": company_a_data.get("source", "unknown"),
                 "competitor_b": company_b_data.get("source", "unknown"),
-                "ai": "openai-live" if self.ai_service.is_configured else "heuristic",
+                "ai": (
+                    "openai-live"
+                    if self.ai_service.is_configured and self.ai_service.daily_briefing_ai_enabled
+                    else "heuristic"
+                ),
             },
         }
 
@@ -107,3 +107,15 @@ class IntelligenceOrchestrator:
                 "b": b_metrics.get("headcount_growth_pct", 0),
             },
         }
+
+    @staticmethod
+    def _build_company_summary(company_data: Dict[str, Any]) -> str:
+        metrics = company_data.get("company_metrics", {})
+        top_jobs = [job.get("job_title", "") for job in company_data.get("hiring_signals", [])[:2] if job.get("job_title")]
+        top_job_text = ", ".join(top_jobs) if top_jobs else "platform and product roles"
+
+        return (
+            f"{company_data.get('company_name', 'Competitor')} has headcount {metrics.get('headcount', 0)} "
+            f"with {metrics.get('headcount_growth_pct', 0)}% growth and {metrics.get('job_openings', 0)} open roles. "
+            f"Recent hiring focus includes {top_job_text}."
+        )

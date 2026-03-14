@@ -22,6 +22,8 @@ class AIChatRequest(BaseModel):
 
 class CompetitorIntelligence(BaseModel):
     company_name: str
+    source: str | None = None
+    has_live_data: bool | None = None
     social_activity: List[Dict[str, Any]]
     keyword_trends: List[Dict[str, Any]]
     people_intelligence: List[Dict[str, Any]]

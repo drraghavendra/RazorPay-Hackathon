@@ -88,8 +88,19 @@ User-confirmed choices:
   3) final card-based result view.
 - Kept `/comparison` and `/chat` pages intact as requested.
 - Added new action controls on result stage (`New Battlecard`, `Refresh`).
-- Optimized briefing response latency for UX flow consistency by using heuristic daily insight mode (`OPENAI_DAILY_BRIEFING_ENABLED=false`) while preserving LLM-backed chat.
+- Optimized UX flow timing and reliability for staged dashboard transitions during live-data generation.
 - Addressed testing-agent feedback by fixing ComparisonPage effect dependencies and stabilizing chart rendering logic.
+
+### 2026-03-14 (Update: Strict Live Data Mode)
+- Switched to **strict live-only data behavior** based on user choice:
+  - removed demo fallback payload from orchestrator for production paths,
+  - no synthetic keyword/sentiment extrapolation,
+  - no heuristic dashboard insight fallback.
+- Enabled live LLM dashboard insights (`OPENAI_DAILY_BRIEFING_ENABLED=true`) and kept chat live.
+- Increased frontend API timeout to 120s so long-running live brief generation completes in UI.
+- Added explicit live empty states in dashboard cards (social, hiring, sentiment, news, opportunities, risk alerts).
+- Added **Product Changes** panel with test IDs and live/empty rendering.
+- Added competitor-level provenance fields in API response model (`source`, `has_live_data`) for dynamic-data transparency.
 
 ## Prioritized Backlog
 

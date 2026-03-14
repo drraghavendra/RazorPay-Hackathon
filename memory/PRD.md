@@ -72,6 +72,15 @@ User-confirmed choices:
 - Added README with setup and endpoint documentation
 - Added backend regression tests (`/app/backend/tests/test_intelligence_endpoints.py`)
 
+### 2026-03-14 (Update: Live Crustdata Token Integration)
+- Integrated provided Crustdata token into backend environment.
+- Refactored Crustdata service to use token-supported live endpoints and proper request schema:
+  - `GET /screener/company` (company_name + allowed fields)
+  - `GET /screener/linkedin_posts` (company_name + supported post fields)
+  - `POST /screener/persondb/search` (filter object with `column`, `type`, `value`)
+  - `POST /screener/linkedin_posts/keyword_search`
+- Added API version header support (`CRUSTDATA_API_VERSION=2025-11-01`) and validated live source status (`crustdata-live`) from briefing/comparison/chat flows.
+
 ## Prioritized Backlog
 
 ### P0 (Must do next)

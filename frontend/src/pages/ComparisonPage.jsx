@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { useEffect, useState } from "react";
+import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +8,12 @@ import { getComparison } from "@/lib/api";
 import { getStoredCompetitors } from "@/lib/storage";
 
 const ComparisonPage = () => {
-  const stored = getStoredCompetitors();
+  const stored = useMemo(() => getStoredCompetitors(), []);
   const [comparison, setComparison] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showChart, setShowChart] = useState(false);
+  const [barChartSize, setBarChartSize] = useState({ width: 0, height: 0 });
+  const barChartRef = useRef(null);
 
   useEffect(() => {
     const load = async () => {
@@ -28,7 +31,26 @@ const ComparisonPage = () => {
       }
     };
     load();
-  }, []);
+  }, [stored.competitorA, stored.competitorB]);
+
+  useEffect(() => {
+    if (comparison) {
+      const timer = setTimeout(() => setShowChart(true), 180);
+      return () => clearTimeout(timer);
+    }
+    setShowChart(false);
+    return undefined;
+  }, [comparison]);
+
+  useEffect(() => {
+    if (!showChart || !barChartRef?.current) return undefined;
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setBarChartSize({ width: Math.floor(width), height: Math.floor(height) });
+    });
+    observer.observe(barChartRef.current);
+    return () => observer.disconnect();
+  }, [showChart, barChartRef]);
 
   const chartData = comparison
     ? [
@@ -130,23 +152,33 @@ const ComparisonPage = () => {
                 <CardTitle>Signal Magnitude Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <div data-testid="comparison-bar-chart" className="h-80 min-w-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
-                      <XAxis dataKey="metric" stroke="rgba(148,163,184,0.7)" />
-                      <YAxis stroke="rgba(148,163,184,0.7)" />
-                      <Tooltip
-                        contentStyle={{
-                          background: "#12141C",
-                          border: "1px solid #2D3042",
-                          borderRadius: "8px",
-                        }}
-                      />
-                      <Bar dataKey={comparison.competitor_a} fill="#6366F1" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey={comparison.competitor_b} fill="#22D3EE" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div ref={barChartRef} data-testid="comparison-bar-chart" className="h-80 min-w-0 w-full">
+                  {showChart && barChartSize.width > 20 && barChartSize.height > 20 ? (
+                    <div className="h-full w-full">
+                      <BarChart
+                        width={Math.max(barChartSize.width - 12, 300)}
+                        height={Math.max(barChartSize.height - 12, 240)}
+                        data={chartData}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
+                        <XAxis dataKey="metric" stroke="rgba(148,163,184,0.7)" />
+                        <YAxis stroke="rgba(148,163,184,0.7)" />
+                        <Tooltip
+                          contentStyle={{
+                            background: "#12141C",
+                            border: "1px solid #2D3042",
+                            borderRadius: "8px",
+                          }}
+                        />
+                        <Bar dataKey={comparison.competitor_a} fill="#6366F1" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey={comparison.competitor_b} fill="#22D3EE" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </div>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                      Preparing chart...
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

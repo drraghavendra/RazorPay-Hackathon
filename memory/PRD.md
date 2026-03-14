@@ -81,6 +81,16 @@ User-confirmed choices:
   - `POST /screener/linkedin_posts/keyword_search`
 - Added API version header support (`CRUSTDATA_API_VERSION=2025-11-01`) and validated live source status (`crustdata-live`) from briefing/comparison/chat flows.
 
+### 2026-03-14 (Update: UX Redesign - Form → Processing → Results)
+- Redesigned homepage flow into staged battlecard experience:
+  1) competitor form input,
+  2) processing checklist screen,
+  3) final card-based result view.
+- Kept `/comparison` and `/chat` pages intact as requested.
+- Added new action controls on result stage (`New Battlecard`, `Refresh`).
+- Optimized briefing response latency for UX flow consistency by using heuristic daily insight mode (`OPENAI_DAILY_BRIEFING_ENABLED=false`) while preserving LLM-backed chat.
+- Addressed testing-agent feedback by fixing ComparisonPage effect dependencies and stabilizing chart rendering logic.
+
 ## Prioritized Backlog
 
 ### P0 (Must do next)

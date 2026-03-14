@@ -13,12 +13,11 @@ import {
   Signal,
   Users,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CartesianGrid,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -61,7 +60,10 @@ const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [stage, setStage] = useState("form");
   const [activeStep, setActiveStep] = useState(0);
+  const [showCharts, setShowCharts] = useState(false);
+  const [sentimentChartSize, setSentimentChartSize] = useState({ width: 0, height: 0 });
   const stepTimerRef = useRef(null);
+  const sentimentChartRef = useRef(null);
 
   const competitorAData = report?.competitor_a;
   const competitorBData = report?.competitor_b;
@@ -74,6 +76,25 @@ const DashboardPage = () => {
       competitorB: competitorBData.sentiment_trend[index]?.rating ?? null,
     }));
   }, [competitorAData, competitorBData]);
+
+  useEffect(() => {
+    if (stage === "results") {
+      const timer = setTimeout(() => setShowCharts(true), 180);
+      return () => clearTimeout(timer);
+    }
+    setShowCharts(false);
+    return undefined;
+  }, [stage]);
+
+  useEffect(() => {
+    if (!showCharts || !sentimentChartRef.current) return undefined;
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setSentimentChartSize({ width: Math.floor(width), height: Math.floor(height) });
+    });
+    observer.observe(sentimentChartRef.current);
+    return () => observer.disconnect();
+  }, [showCharts]);
 
   const clearStepTimer = () => {
     if (stepTimerRef.current) {
@@ -445,23 +466,33 @@ const DashboardPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div data-testid="sentiment-chart" className="h-72 min-w-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={sentimentChart}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
-                      <XAxis dataKey="month" stroke="rgba(148,163,184,0.7)" />
-                      <YAxis domain={[2.8, 5]} stroke="rgba(148,163,184,0.7)" />
-                      <Tooltip
-                        contentStyle={{
-                          background: "#12141C",
-                          border: "1px solid #2D3042",
-                          borderRadius: "8px",
-                        }}
-                      />
-                      <Line type="monotone" dataKey="competitorA" stroke="#6366F1" strokeWidth={2.5} />
-                      <Line type="monotone" dataKey="competitorB" stroke="#22D3EE" strokeWidth={2.5} />
-                    </LineChart>
-                  </ResponsiveContainer>
+                <div ref={sentimentChartRef} data-testid="sentiment-chart" className="h-72 min-w-0 w-full">
+                  {showCharts && sentimentChartSize.width > 20 && sentimentChartSize.height > 20 ? (
+                    <div className="h-full w-full">
+                      <LineChart
+                        width={Math.max(sentimentChartSize.width - 12, 280)}
+                        height={Math.max(sentimentChartSize.height - 12, 220)}
+                        data={sentimentChart}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
+                        <XAxis dataKey="month" stroke="rgba(148,163,184,0.7)" />
+                        <YAxis domain={[2.8, 5]} stroke="rgba(148,163,184,0.7)" />
+                        <Tooltip
+                          contentStyle={{
+                            background: "#12141C",
+                            border: "1px solid #2D3042",
+                            borderRadius: "8px",
+                          }}
+                        />
+                        <Line type="monotone" dataKey="competitorA" stroke="#6366F1" strokeWidth={2.5} />
+                        <Line type="monotone" dataKey="competitorB" stroke="#22D3EE" strokeWidth={2.5} />
+                      </LineChart>
+                    </div>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                      Preparing chart...
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
